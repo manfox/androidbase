@@ -1,0 +1,183 @@
+1. View是什么?
+     1). View类是所有用来构建用户界面的组件的基类                                                                                                                       
+     2). ViewGroup是View的一个子类, 是各种布局的基类, 
+          它是包含其它View或ViewGroup和定义这些孩子布局参数的容器
+     3). 一个View(ViewGroup)占用屏幕上的一个矩形区域, 它负责界面的绘制和事件处理
+     4). 手机屏幕上所有看得见摸得着的都是View(包括ViewGroup)
+2. View的分类
+    1).  不能包含子View的View: 一般的View
+          TextView: 显示文本(它也可以带图片)
+          Button: 按钮
+          ImageView: 显示图片
+          EditText/RadioButton/Checkbox
+    2). 可以包含子View的View: ViewGroup
+          FrameLayout
+          RelativeLayout
+          LinearLayout
+          ScrollView
+        
+          ListView
+          GridView
+3. ViewGroup
+     1). ViewGroup extends View implements ViewParent, ViewManager
+     2). ViewManager: 用来添加、删除、更新布局
+          addView(View v)
+          removeView(View v)
+          updateViewLayout(View v)
+     3). ViewParent: 提供了一系列操作子View的方法
+4. 关于View和ViewGroup
+     1). 整个界面只会有一个根View
+          a. 得到它: window.getDecorview()      PhoneWindow$decorView
+          b. 本质类型: FrameLayout
+          c. setContentView()添加的视图不是整个界面的根view       FrameLayout(id=content)  
+     2). 一个View只会有一个父View(ViewGroup), 一个ViewGroup可以有多个子View
+          a. 得到父视图: view.getParent(), 可以将返回的ViewParent强转为指定的ViewGroup
+          b. 不是所有的View都能添加子view, 只有ViewGroup及其子类才能添加
+5. 区别View与Activity?
+     1). Activity是四大组件中唯一能与用户进行直接交互的组件
+     2). Activity只是控制和管理View, 真正显示和处理事件的是View本身来完成
+     3). Activity内部有一个window对象, window对象(Phonewindow)中包含一个FramLayout类型的decorView
+          在Activity中setContentView(view)实质上是将view添加到decorView中
+          手机屏幕中显示的根布局就是decorView
+6. 显示ContentView的3种方式:
+       直接加载布局
+     1). setContentView(R.layout.activity_main);
+       动态加载布局
+     2). View view = View.inflate(this, R.layout.activity_main, null);
+          setContentView(view);
+        通过new创建
+     3). MyTextView tv = new MyTextView(this);
+          setContentView(tv);
+7. View的生命周期过程:
+     1). 创建View对象
+          a. 存在2种创建的方式: 加载布局文件创建和直接new构造方法创建
+          b. 布局文件方式的本质: 解析布局xml, 根据标签名创建对应的View对象, 并将标签属性设置到对象中(构造方法)
+          c. 布局文件方式: 在所有的View对象都创建好了后, 会调用onFinishInflate()
+          d. 在视图对象都创建好后, 调用onAttachedToWindow(), 表明view对象关联到window上了
+     2). 测量(多大?)
+          a.方法执行: measure()--->onMeasure()--->setMeasuredDimension()
+          b. measure(): 用来确定当前View的大小, 它是final的方法不能重写, 它内部调用了onMeasure()
+          c.onMeasure(): 一般重写此方法, 根据我们的实际需求, 对View进行测量, 并保存宽高
+          d. setMeasuredDimension(): onMeasure()中必须调用些方法保存当前View测试出的宽度和高度
+     3). 布局(在哪?)
+          a. 方法执行: layout()--->onLayout()
+          b. layout(l, t, r, b): 
+               ①. 指定View的左上角点的坐标和右下角点的坐标
+               ②. 比较原有的l,t,r,b与当前的l,t,r,b, 如果有变化了或请求重新layout, 就会调用onLayout(l,t,r,b)
+               ③. 不会重写些方法, 只会调用些方法来指定当前View在父View中的位置
+          c. onLayout(changed, l, t, r, b)
+               ①. 决定当前view在父ViewGroup中的位置
+               ②. 在View类中只是空实现, View还不知道在此方法中做什么工作, 需要子View来去重写此方法实现所需要的
+               ③. 在ViewGroup类中用来指定子View的位置, 但是abstract
+                         FrameLayout
+                         LinearLayout
+                         RelativeLayout
+               ④. LinearLayout的实现:
+          判断自身是横屏还是竖屏?               遍历所有的子View, 为它们准备l,t,r,b               如果是垂直:                    A  (0,0,width1,height1),                    B (0,height1,width2,height1+height2),                   C (0,height1+height2,width3,height1+height2+height3)               如果是水平:                    (0,0,width1,height1),                    (height1,0,height1+width2,height2),                    (height1+height2,0,height1+height2+width3,height3)   
+          d. 可以通过requestLayout()的方式来强制重新layout
+     4). 绘制(啥样?)
+          a. 方法执行: draw()--->onDraw()
+          b. draw(): 
+               ①. 画一些通用的东西(如背景,滚动条等), 一般不会去重写此方法
+                    1>. Draw the background(画背景)
+                    2>. Draw view's content(画内容)
+                    3>. Draw children(画子View)
+                    4>. Draw decorations scrollbars (画滚动条)
+               ②. 如果是View, 使用onDraw(canvas)来画界面
+               ③. 如果是ViewGroup, 使用dispatchDraw(canvas)---分发给子View绘制
+          c. onDraw(Canvas canvas)
+               ①. 所有特定的View(比如:TextView/ImageView)都重写了此方法来绘制自己的样子
+               ②. 主要使用Paint和Canvas来绘制
+          d. 可以通过调用inValidate()或postInValidate()来强制重绘
+     5). 事件处理: 
+          a. 相关方法: 
+               onTouchEvent(MotionEvent): 触摸事件的回调方法
+               OnTouchListener--->onTouch(View v, MotionEvent event) : 触摸事件的监听器
+          b. 事件的分发和处理过程
+     6). 死亡:
+          b. 相关方法: onDetachedFromWindow()
+          c. 当Activity退出或当前View被移除触发
+8. 总结: 
+creation
+     二种方式 : new 构造方法(context) ,  定义布局文件再加载(setContentView()/View.inflate()---(context, AttributeSet))     
+     全类名<TextView>               <com.atguigu.MyTextView>
+     所有View对象都创建好了--->onFinishInflate()[必须是布局文件]--->onAttachToWindow()  --->getViewAt(int position)
+measure(多大?)
+     -->measure()--->onMearsure()    产生一个测量的尺寸(宽高)  --->getMearsureHeight()  getMearsureWidth()     -->onResume()
+layout(在哪?)
+     --->layout(l, t, r, b)--->onLayout(boolean change, l, t, r, b)
+     requestLayout(): 强制重新布局
+draw(撒样?)
+     draw()--->onDraw()       
+     invalidate()/postInvalidate(): 强制重绘
+event deal
+     onTouchEvent()
+          return true;  消费事件     --->拦截事件
+die
+     onDetachedFromWindow()
+自定义视图属性
+1. 理解属性值的类型(format)
+     1. reference 引用类型值
+     2. color 颜色类型值
+     3. boolean 布尔类型值
+     4. dimension 尺寸类型值
+     5. integer 整数类型值
+     6. float 小数类型值
+     7. string 字符串类型值
+     8. <enum> 枚举类型值
+2. 定义属性: 在value目录下创建attrs.xml
+     <!-- 定义名字为MyViewAttributes属性集合 -->
+     <declare-styleable name="MyViewAttributes">
+          <!-- 定义类型为reference，属性名为my_name的属性 -->
+          <attr name="my_name" format="string" />
+          <!-- 定义类型为integer，属性名为my_age的属性 -->
+          <attr name="my_age" format="integer" />
+          <!-- 定义类型为reference，属性名为my_bg的属性 -->
+          <attr name="my_bg" format="reference" />
+     </declare-styleable>
+3. 在布局文件中引用当前应用的名称空间:
+     格式: xmlns:atguigu="http://schemas.android.com/apk/res/应用包名"
+     例子: xmlns:atguigu="http://schemas.android.com/apk/res/com.atguigu.myattr"
+4. 在自定义视图标签中使用自定义属性:
+     <com.atguigu.myattr.MyAttributeView
+          atguigu:my_name="xfzhang"
+          atguigu:my_age="30"
+          atguigu:my_bg="@drawable/logo"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"/>
+5. 在自定义View类的构造方法中, 取出布局中的属性值:
+     //得到所有自定义属性的数组
+     TypedArray typedArray = context.obtainStyledAttributes(attrs,R.styleable.MyViewAttributes);
+     // 获取自定义属性的值, 如果没有指定取默认值
+     String name = typedArray.getString(R.styleable.MyViewAttributes_my_name, null);    
+     int age = typedArray.getInt(R.styleable.MyViewAttributes_my_age, 10);
+     int bg = typedArray.getResource(R.styleable.MyViewAttributes_my_bg, R.drawable.ic_launcher);
+     //释放资源数据
+     typedArray.recycle();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
